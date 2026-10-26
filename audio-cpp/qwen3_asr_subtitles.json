@@ -6,7 +6,8 @@
       "language": "ja",
       "vad_model": "${workflow_dir}/silero_vad_16k.safetensors",
       "qwen3_asr_model": "${workflow_dir}/qwen3-asr-1.7b-q8_0.gguf",
-      "qwen3_forced_aligner_model": "${workflow_dir}/qwen3-forced-aligner-0.6b-q8_0.gguf"
+      "qwen3_forced_aligner_model": "${workflow_dir}/qwen3-forced-aligner-0.6b-q8_0.gguf",
+      "backend": "vulkan"
    },
    "steps": [
       {
@@ -16,7 +17,7 @@
          "model": "${qwen3_asr_model}",
          "task": "asr",
          "mode": "offline",
-         "backend": "vulkan",
+         "backend": "${backend}",
          "text_out": "${out_dir}/transcript.txt",
          "words_out": "${out_dir}/words.json",
          "session_options": {
