@@ -36,8 +36,7 @@ def parse(text: str, words):
             start_time = word["start_sample"]
         search_index = offset + 1
         for char in word["word"][1:]:
-            offset = text.index(char, search_index)
-            search_index = offset + 1
+            search_index = text.index(char, search_index) + 1
 
     end_time = words[-1]["end_sample"]
     yield (start_time, end_time, wrap(text[start_index:]))
