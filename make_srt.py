@@ -4,6 +4,7 @@
 import argparse
 import json
 from pathlib import Path
+import textwrap
 
 SAMPLE_RATE = 16000  # Audio sample rate (Hz), matching the silero_vad 16k model
 SENTENCE_END = set("。？")  # Sentence-ending punctuation; split cues after these
@@ -20,6 +21,7 @@ def format_time(samples):
 
 def parse(text: str, words):
     text = text.replace(" ", "")
+    wrap = lambda item: item if len(item) <= 40 else "\n".join(textwrap.wrap(item, width=((len(item) + 1) // 2)))
 
     search_index = 0
     start_index = 0
@@ -29,7 +31,7 @@ def parse(text: str, words):
         offset = text.index(word["word"][0], search_index)
         if offset > 0 and text[offset - 1] in SENTENCE_END:
             end_time = words[index - 1]["end_sample"]
-            yield (start_time, end_time, text[start_index:offset])
+            yield (start_time, end_time, wrap(text[start_index:offset]))
             start_index = offset
             start_time = word["start_sample"]
         search_index = offset + 1
@@ -38,7 +40,8 @@ def parse(text: str, words):
             search_index = offset + 1
 
     end_time = words[-1]["end_sample"]
-    yield (start_time, end_time, text[start_index:])
+    yield (start_time, end_time, wrap(text[start_index:]))
+
 
 def main():
     """Read transcript and word-level timestamps, then generate an SRT subtitle file."""
@@ -53,7 +56,8 @@ def main():
 
     result = "\n\n".join(
         f"{i + 1}\n{format_time(start)} --> {format_time(end)}\n{item}"
-        for i, (start, end, item) in enumerate(parse(text, words)))
+        for i, (start, end, item) in enumerate(parse(text, words))
+    )
     args.output.write_text(result, encoding="utf-8")
 
 
