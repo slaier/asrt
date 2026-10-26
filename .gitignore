@@ -1,0 +1,7 @@
+audio-cpp/
+workflow_outputs/
+__pycache__/
+
+*.mp4
+*.wav
+*.srt
