@@ -8,6 +8,7 @@ import textwrap
 
 SAMPLE_RATE = 16000  # Audio sample rate (Hz), matching the silero_vad 16k model
 SENTENCE_END = set("。？")  # Sentence-ending punctuation; split cues after these
+SHORT_CUE_SAMPLE = SAMPLE_RATE * 4 // 5
 
 
 def format_time(samples):
@@ -21,17 +22,33 @@ def format_time(samples):
 
 def parse(text: str, words):
     text = text.replace(" ", "")
-    wrap = lambda item: item if len(item) <= 40 else "\n".join(textwrap.wrap(item, width=((len(item) + 1) // 2)))
+
+    def wrap(item: str):
+        line = (len(item) + 24) // 25
+        return textwrap.fill(item, (len(item) + line - 1) // line)
 
     search_index = 0
     start_index = 0
     start_time = words[0]["start_sample"]
+    end_time = 0
 
     for index, word in enumerate(words):
         offset = text.index(word["word"][0], search_index)
         if offset > 0 and text[offset - 1] in SENTENCE_END:
+            gap_pre = start_time - end_time
             end_time = words[index - 1]["end_sample"]
-            yield (start_time, end_time, wrap(text[start_index:offset]))
+            gap_post = word["start_sample"] - end_time
+            back = forward = 0
+            delta = SHORT_CUE_SAMPLE - (end_time - start_time)
+            if delta > 0:
+                back = forward = min(gap_pre, gap_post, delta // 2)
+                extra = delta - back - forward
+                if gap_pre > gap_post:
+                    back += min(extra, gap_pre - back)
+                else:
+                    forward += min(extra, gap_post - forward)
+            end_time += forward
+            yield (start_time - back, end_time, wrap(text[start_index:offset]))
             start_index = offset
             start_time = word["start_sample"]
         search_index = offset + 1
